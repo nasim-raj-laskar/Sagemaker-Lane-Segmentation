@@ -1,0 +1,43 @@
+# configs/data/kitti.yaml
+
+name: kitti
+version: "2012"
+description: "KITTI road segmentation dataset"
+
+s3:
+  bucket: ${oc.env:S3_BUCKET,road-seg-bucket}
+  raw_prefix: raw-data/kitti
+  processed_prefix: processed-data/kitti
+  region: ${oc.env:AWS_DEFAULT_REGION,us-east-1}
+
+local:
+  image_dir: ${paths.data_local}/raw/image_2
+  mask_dir: ${paths.data_local}/raw/gt_image_2
+  processed_dir: ${paths.data_local}/processed
+
+preprocessing:
+  img_size: 256                    # resize both spatial dims to this
+  normalize: true                  # divide by 255.0
+  road_channel: 0                  # R channel == 255 marks road pixels
+  road_threshold: 255
+
+splits:
+  test_size: 0.2
+  val_size: 0.1                    # fraction of train split used for validation
+  random_state: 42
+  stratify: false
+
+augmentation:
+  enabled: true
+  horizontal_flip: true
+  vertical_flip: false
+  rotation_range: 10
+  brightness_range: [0.8, 1.2]
+  zoom_range: 0.1
+
+dataloader:
+  batch_size: 8
+  shuffle: true
+  prefetch: 2                      # tf.data prefetch buffer
+  num_parallel_calls: 4            # tf.data map parallelism
+  cache: false                     # cache dataset in memory (small datasets only)

@@ -1,4 +1,51 @@
-dataset/
-.env
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# Virtual envs
+.venv/
 venv/
-.venv
+env/
+
+# Secrets — never commit
+.env
+*.pem
+*.key
+dataset/
+# Data — store in S3, not git
+*.npy
+*.h5
+*.keras
+*.tar.gz
+
+# Artifacts
+artifacts/
+logs/
+mlruns/
+.mlflow/
+
+# Hydra outputs
+outputs/
+multirun/
+.hydra/
+
+# Notebooks checkpoints
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# macOS
+.DS_Store
+
+# Coverage
+.coverage
+coverage.xml
+htmlcov/

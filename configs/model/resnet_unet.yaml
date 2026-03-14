@@ -1,0 +1,37 @@
+# configs/model/resnet_unet.yaml
+
+name: resnet_unet
+architecture: unet
+backbone: resnet50
+description: "ResNet50 encoder + UNet decoder for binary segmentation"
+
+backbone:
+  name: ResNet50
+  weights: imagenet              # pretrained weights
+  include_top: false
+  trainable: false               # freeze encoder initially
+  input_shape: [256, 256, 3]
+
+encoder_layers:                  # skip connection source layers
+  s1: conv1_relu                 # stride 2  — 128x128x64
+  s2: conv2_block3_out           # stride 4  — 64x64x256
+  s3: conv3_block4_out           # stride 8  — 32x32x512
+  s4: conv4_block6_out           # stride 16 — 16x16x1024
+  bottleneck: conv5_block3_out   # stride 32 — 8x8x2048
+
+decoder:
+  filters: [512, 256, 128, 64]   # channels per decoder block (top → bottom)
+  kernel_size: 3
+  padding: same
+  activation: relu
+  upsample_factor: 2
+
+head:
+  filters: 1
+  kernel_size: 1
+  activation: sigmoid
+
+fine_tuning:                     # applied after initial frozen training
+  enabled: true
+  unfreeze_from_layer: conv4_block1_1_conv
+  learning_rate_multiplier: 0.1  # LR for unfrozen encoder = base_lr * multiplier
