@@ -1,1 +1,3 @@
 dataset/
+notebook/model.tar.gz
+notebook/lane_segmentation_model.keras
