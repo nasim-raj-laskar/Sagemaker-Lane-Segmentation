@@ -23,14 +23,16 @@ logger = logging.getLogger(__name__)
 
 
 #  KITTI naming helpers 
+def img_to_mask_name(img_path: str) -> str:
+    img_path = Path(img_path)
 
-def img_to_mask_name(img_name: str) -> str:
-    """
-    KITTI convention:  um_000000.png  →  um_road_000000.png
-                       umm_000000.png →  umm_road_000000.png
-    """
-    prefix, rest = img_name.split("_", 1)
-    return f"{prefix}_road_{rest}"
+    filename = img_path.name  
+    prefix, rest = filename.split("_", 1)
+
+    mask_name = f"{prefix}_road_{rest}"
+
+    # change directory to mask folder
+    return str(img_path.parent.parent / "mask" / mask_name)
 
 
 #  Augmentation pipeline 
