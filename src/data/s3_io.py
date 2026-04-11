@@ -27,7 +27,7 @@ def _client() -> boto3.client:
     return _s3
 
 
-# ─── List / exists ────────────────────────────────────────────────────────────
+#  List / exists 
 
 def list_keys(bucket: str, prefix: str) -> list[str]:
     """Return all object keys under a prefix (handles pagination)."""
@@ -47,7 +47,7 @@ def key_exists(bucket: str, key: str) -> bool:
         return False
 
 
-# ─── Download ────────────────────────────────────────────────────────────────
+#  Download 
 
 def download_file(bucket: str, key: str, local_path: str | Path) -> Path:
     local_path = Path(local_path)
@@ -90,7 +90,7 @@ def read_mask_from_s3(bucket: str, key: str) -> np.ndarray:
     return road
 
 
-# ─── Upload ──────────────────────────────────────────────────────────────────
+#  Upload 
 
 def upload_file(local_path: str | Path, bucket: str, key: str) -> str:
     """Upload a local file and return its s3:// URI."""
