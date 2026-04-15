@@ -25,13 +25,16 @@ logger = logging.getLogger(__name__)
 #  KITTI naming helpers 
 def img_to_mask_name(img_path: str) -> str:
     img_path = Path(img_path)
-
     filename = img_path.name  
     prefix, rest = filename.split("_", 1)
-
-    mask_name = f"{prefix}_lane_{rest}"
-
-    return mask_name
+    
+    # Only um_ images have corresponding _lane_ masks
+    if prefix == "um":
+        mask_name = f"{prefix}_lane_{rest}"
+        return mask_name
+    else:
+        # Return None for images without masks (umm_, uu_, etc.)
+        return None
 
 
 #  Augmentation pipeline 
@@ -108,6 +111,11 @@ def build_dataset(
 
     for img_name in img_names:
         mask_name = img_to_mask_name(img_name)
+        if mask_name is None:
+            logger.warning("No mask available for %s — skipping", img_name)
+            skipped += 1
+            continue
+            
         img_path  = image_dir / img_name
         mask_path = mask_dir  / mask_name
 

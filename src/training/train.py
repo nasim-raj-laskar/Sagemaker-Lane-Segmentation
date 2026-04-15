@@ -20,8 +20,8 @@ import os
 import sys
 from pathlib import Path
 
-os.environ['TF_XLA_FLAGS'] = '--tf_xla_auto_jit=0'
-os.environ['XLA_FLAGS'] = '--xla_disable_all_hlo_passes'
+os.environ['TF_XLA_FLAGS'] = '--tf_xla_enable_xla_devices=false'
+os.environ['XLA_FLAGS'] = '--xla_gpu_cuda_data_dir=/opt/conda'
 
 import yaml
 import mlflow
