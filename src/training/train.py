@@ -31,7 +31,7 @@ import tensorflow as tf
 tf.config.optimizer.set_jit(False)
 
 
-# ── path hack for local dev 
+#  path hack for local dev 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from config.config_loader import load_config
@@ -44,7 +44,7 @@ from src.utils.logging_utils import setup_logging
 logger = logging.getLogger(__name__)
 
 
-# ─── Hyperparameter parser (SM injects these) ─────────────────────────────────
+#  Hyperparameter parser (SM injects these) 
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser()
@@ -69,7 +69,7 @@ def parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
-# ─── Main ─────────────────────────────────────────────────────────────────────
+#  Main 
 
 def main() -> None:
     setup_logging()
@@ -87,7 +87,7 @@ def main() -> None:
                 cfg.training.epochs, cfg.training.batch_size,
                 cfg.training.learning_rate, cfg.data.img_size)
 
-    # ── MLflow ────────────────────────────────────────────────────────────────
+    #  MLflow 
     if args.mlflow_tracking_uri:
         mlflow.set_tracking_uri(args.mlflow_tracking_uri)
 
@@ -103,7 +103,7 @@ def main() -> None:
             "loss":          cfg.training.loss,
         })
 
-        # ── Load data ─────────────────────────────────────────────────────────
+        #  Load data 
         logger.info("Loading training data from %s", args.train)
         img_dir  = Path(args.train) / "image"
         mask_dir = Path(args.train) / "mask"
@@ -129,7 +129,7 @@ def main() -> None:
 
         logger.info("Train: %s  Val: %s", X.shape, X_val.shape)
 
-        # ── Build model ───────────────────────────────────────────────────────
+        #  Build model 
         model = build_model_from_config(cfg.data, cfg.model)
 
         loss_fn = CombinedLoss() if cfg.training.loss == "combined" else cfg.training.loss
@@ -140,7 +140,7 @@ def main() -> None:
             metrics=["accuracy", BinaryIoU(name="iou")],
         )
 
-        # ── Callbacks ─────────────────────────────────────────────────────────
+        #  Callbacks 
         callbacks = build_callbacks(
             cfg=cfg,
             model_dir=args.model_dir,
@@ -148,7 +148,7 @@ def main() -> None:
             mlflow_run_id=run.info.run_id,
         )
 
-        # ── Train ─────────────────────────────────────────────────────────────
+        #  Train 
         history = model.fit(
             X, Y,
             validation_data=(X_val, Y_val),
@@ -158,12 +158,12 @@ def main() -> None:
             verbose=2,
         )
 
-        # ── Log final metrics ─────────────────────────────────────────────────
+        #  Log final metrics 
         final_metrics = {k: float(v[-1]) for k, v in history.history.items()}
         mlflow.log_metrics(final_metrics)
         logger.info("Final metrics: %s", json.dumps(final_metrics, indent=2))
 
-        # ── Save model ────────────────────────────────────────────────────────
+        #  Save model 
         model_dir = Path(args.model_dir)
         model_dir.mkdir(parents=True, exist_ok=True)
         saved_model_path = str(model_dir / "road_seg_savedmodel")

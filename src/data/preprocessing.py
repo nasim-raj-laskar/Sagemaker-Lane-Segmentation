@@ -29,10 +29,9 @@ def img_to_mask_name(img_path: str) -> str:
     filename = img_path.name  
     prefix, rest = filename.split("_", 1)
 
-    mask_name = f"{prefix}_road_{rest}"
+    mask_name = f"{prefix}_lane_{rest}"
 
-    # change directory to mask folder
-    return str(img_path.parent.parent / "mask" / mask_name)
+    return mask_name
 
 
 #  Augmentation pipeline 

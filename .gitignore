@@ -2,3 +2,4 @@ dataset/
 notebook/model.tar.gz
 notebook/lane_segmentation_model.keras
 *__pycache__
+src/self_driving_perceptron.egg-info
