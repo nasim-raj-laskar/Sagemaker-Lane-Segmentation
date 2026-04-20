@@ -23,7 +23,6 @@ logger = logging.getLogger(__name__)
 
 
 #  Local predictor 
-
 class LocalPredictor:
     """
     Runs inference locally using a SavedModel.
