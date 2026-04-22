@@ -24,16 +24,22 @@ logger = logging.getLogger(__name__)
 
 #  KITTI naming helpers 
 def img_to_mask_name(img_path: str) -> str:
+    """Convert image filename to corresponding mask filename."""
     img_path = Path(img_path)
     filename = img_path.name  
     prefix, rest = filename.split("_", 1)
     
-    # Only um_ images have corresponding _lane_ masks
+    # Map image prefixes to mask prefixes
     if prefix == "um":
-        mask_name = f"{prefix}_lane_{rest}"
-        return mask_name
+        # Try both lane and road masks for um_ images
+        lane_mask = f"{prefix}_lane_{rest}"
+        road_mask = f"{prefix}_road_{rest}"
+        return [lane_mask, road_mask]  # Return both options
+    elif prefix == "umm":
+        return [f"{prefix}_road_{rest}"]
+    elif prefix == "uu":
+        return [f"{prefix}_road_{rest}"]
     else:
-        # Return None for images without masks (umm_, uu_, etc.)
         return None
 
 
@@ -110,16 +116,23 @@ def build_dataset(
     skipped = 0
 
     for img_name in img_names:
-        mask_name = img_to_mask_name(img_name)
-        if mask_name is None:
+        mask_candidates = img_to_mask_name(img_name)
+        if mask_candidates is None:
             logger.warning("No mask available for %s — skipping", img_name)
             skipped += 1
             continue
             
-        img_path  = image_dir / img_name
-        mask_path = mask_dir  / mask_name
-
-        if not mask_path.exists():
+        img_path = image_dir / img_name
+        
+        # Try to find any available mask
+        mask_path = None
+        for mask_name in mask_candidates:
+            candidate_path = mask_dir / mask_name
+            if candidate_path.exists():
+                mask_path = candidate_path
+                break
+                
+        if mask_path is None:
             logger.warning("Missing mask for %s — skipping", img_name)
             skipped += 1
             continue

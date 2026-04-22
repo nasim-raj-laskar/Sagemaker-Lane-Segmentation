@@ -1,6 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
 dataset/
-notebook/model.tar.gz
-notebook/lane_segmentation_model.keras
-*__pycache__
-src/self_driving_perceptron.egg-info
+# Virtual envs
+.venv/
+venv/
+env/
+
+# Testing & coverage
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# AWS / SageMaker
+.aws/
+*.tar.gz
+*.pb
+
+# ML artifacts (never commit model weights)
+*.h5
+*.keras
+*.ckpt*
+checkpoint
+road_seg_savedmodel/
+
+# Data
+data/
+*.npy
+*.npz
+
+# Notebooks checkpoints
+.ipynb_checkpoints/
+
+# Logs
+*.log
+tensorboard/
 mlruns/
+
+# OS
+.DS_Store
+Thumbs.db

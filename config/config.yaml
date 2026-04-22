@@ -53,21 +53,21 @@ model:
   decoder_filters: [512, 256, 128, 64]
 
 training:
-  epochs: 5
-  batch_size: 8
+  epochs: 3
+  batch_size: 16
   learning_rate: 1.0e-4
   optimizer: adam
   loss: binary_crossentropy
   metrics: [accuracy, iou]
   early_stopping:
     enabled: true
-    patience: 8
+    patience: 5
     monitor: val_iou
     mode: max
   reduce_lr:
     enabled: true
     factor: 0.5
-    patience: 4
+    patience: 3
     min_lr: 1.0e-7
   checkpoint:
     save_best_only: true
