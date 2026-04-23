@@ -11,9 +11,11 @@ dataset/
 .venv/
 venv/
 env/
-
+libdevice.10.bc
 # Testing & coverage
 .pytest_cache/
+notebook/libdevice.10.bc
+fix_libdevice.py
 .coverage
 coverage.xml
 htmlcov/
