@@ -1,0 +1,15 @@
+epochs: 15
+batch_size: 4
+learning_rate: 0.0001
+img_height: 256
+img_width: 832
+test_size: 0.2
+random_state: 42
+normalization_factor: 255.0
+mask_threshold: 255
+verbose: 1
+model_filename: "model.keras"
+tar_filename: "model.tar.gz"
+s3_bucket: "self-driving-perceptron"
+s3_model_prefix: "model-artifacts/lane_segmentation_model"
+timestamp_format: "%Y%m%d_%H%M%S"

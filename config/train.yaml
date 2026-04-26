@@ -1,0 +1,14 @@
+sagemaker:
+  instance_type: ml.g4dn.xlarge
+  instance_count: 1
+  framework_version: "2.11.0"
+  py_version: py39
+  
+s3:
+  bucket: self-driving-perceptron
+  data_path: raw-data
+  model_artifacts_path: model-artifacts
+  code_location: code
+  
+training:
+  job_name_prefix: lane-segmentation-training

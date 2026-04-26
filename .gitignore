@@ -1,55 +1,43 @@
+# Environment variables
+.env
+fix_libdevice.py
+libdevice.10.bc
+dataset/
+models/
 # Python
 __pycache__/
 *.py[cod]
-*.egg-info/
-dist/
+*$py.class
+*.so
+.Python
 build/
+develop-eggs/
+dist/
+downloads/
+eggs/
 .eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
 *.egg
-dataset/
-# Virtual envs
-.venv/
-venv/
-env/
-libdevice.10.bc
-# Testing & coverage
-.pytest_cache/
-notebook/libdevice.10.bc
-fix_libdevice.py
-.coverage
-coverage.xml
-htmlcov/
 
-# Editor
+# Models and outputs
+models/*.keras
+models/*.tar.gz
+output/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# AWS
+.aws/
+
+# IDE
 .vscode/
 .idea/
-*.swp
-
-# AWS / SageMaker
-.aws/
-*.tar.gz
-*.pb
-
-# ML artifacts (never commit model weights)
-*.h5
-*.keras
-*.ckpt*
-checkpoint
-road_seg_savedmodel/
-
-# Data
-data/
-*.npy
-*.npz
-
-# Notebooks checkpoints
-.ipynb_checkpoints/
-
-# Logs
-*.log
-tensorboard/
-mlruns/
-
-# OS
-.DS_Store
-Thumbs.db
+.env.example
