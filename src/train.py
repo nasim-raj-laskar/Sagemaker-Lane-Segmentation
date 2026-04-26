@@ -41,11 +41,11 @@ def load_model_config():
         'normalization_factor': float(hyperparams.get('normalization-factor', 255.0)),
         'mask_threshold': int(hyperparams.get('mask-threshold', 255)),
         'verbose': int(hyperparams.get('verbose', 1)),
-        'model_filename': hyperparams.get('model-filename', 'model.keras'),
-        'tar_filename': hyperparams.get('tar-filename', 'model.tar.gz'),
-        's3_bucket': hyperparams.get('s3-bucket', 'self-driving-perceptron'),
-        's3_model_prefix': hyperparams.get('s3-model-prefix', 'model-artifacts/lane_segmentation_model'),
-        'timestamp_format': hyperparams.get('timestamp-format', '%Y%m%d_%H%M%S')
+        'model_filename': hyperparams.get('model-filename', 'model.keras').strip('"'),
+        'tar_filename': hyperparams.get('tar-filename', 'model.tar.gz').strip('"'),
+        's3_bucket': hyperparams.get('s3-bucket', 'self-driving-perceptron').strip('"'),
+        's3_model_prefix': hyperparams.get('s3-model-prefix', 'model-artifacts/lane_segmentation_model').strip('"'),
+        'timestamp_format': hyperparams.get('timestamp-format', '%Y%m%d_%H%M%S').strip('"')
     }
     return config
 
@@ -84,19 +84,20 @@ def main():
         verbose=config['verbose']
     )
     
-    # Save model
+    # Save model in SageMaker serving format
     model_dir = os.environ.get('SM_MODEL_DIR', "/opt/ml/model")
-    os.makedirs(model_dir, exist_ok=True)
+    serving_model_dir = os.path.join(model_dir, "1")
+    os.makedirs(serving_model_dir, exist_ok=True)
     
-    model_path = os.path.join(model_dir, config['model_filename'])
-    model.save(model_path)
+    # Save as SavedModel format for serving
+    model.save(serving_model_dir, save_format='tf')
     
-    # Create tar.gz for SageMaker
+    # Create tar.gz for SageMaker (only include the serving format)
     tar_path = os.path.join(model_dir, config['tar_filename'])
     with tarfile.open(tar_path, "w:gz") as tar:
-        tar.add(model_path, arcname=config['model_filename'])
+        tar.add(serving_model_dir, arcname="1", recursive=True)
     
-    print(f"Model saved to {model_path}")
+    print(f"Model saved to {serving_model_dir} (serving format)")
     print(f"Model archive saved to {tar_path}")
     
     # Upload model to S3 with timestamp
