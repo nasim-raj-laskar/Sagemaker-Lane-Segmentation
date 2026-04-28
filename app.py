@@ -16,18 +16,13 @@ st.set_page_config(page_title="Lane Segmentation", layout="wide")
 
 @st.cache_resource
 def load_model():
-    """Load model from local or S3"""
-    # Try local first
-    for path in ['models/model.keras', 'models/model_local.keras']:
-        if os.path.exists(path):
-            return tf.keras.models.load_model(path, compile=False)
-    
-    # Try S3
+    """Load model from S3"""
     try:
         s3 = boto3.client('s3')
         response = s3.list_objects_v2(Bucket='self-driving-perceptron', Prefix='model-artifacts/lane_segmentation_model')
         if 'Contents' in response:
             latest = max(response['Contents'], key=lambda x: x['LastModified'])
+            s3_path = f"s3://self-driving-perceptron/{latest['Key']}"
             
             os.makedirs('models', exist_ok=True)
             s3.download_file('self-driving-perceptron', latest['Key'], 'models/latest.tar.gz')
@@ -35,10 +30,18 @@ def load_model():
             with tarfile.open('models/latest.tar.gz', 'r:gz') as tar:
                 tar.extractall('models/latest')
             
-            return tf.keras.models.load_model('models/latest/1', compile=False)
-    except:
-        pass
-    return None
+            # Use TFSMLayer for SavedModel format in Keras 3
+            model_layer = tf.keras.layers.TFSMLayer('models/latest/1', call_endpoint='serving_default')
+            
+            # Create a functional model wrapper
+            inputs = tf.keras.Input(shape=(256, 832, 3))
+            outputs = model_layer(inputs)
+            model = tf.keras.Model(inputs=inputs, outputs=outputs)
+            
+            return model, s3_path
+    except Exception as e:
+        st.error(f"Failed to load model from S3: {e}")
+    return None, None
 
 def preprocess_image(image):
     """Preprocess image for inference"""
@@ -50,11 +53,30 @@ def process_image(image, model):
     processed = preprocess_image(image)
     prediction = model.predict(processed, verbose=0)
     
-    mask = (prediction[0] > 0.5).astype(np.uint8) * 255
+    # Handle TFSMLayer output (dictionary) or direct array
+    if isinstance(prediction, dict):
+        # Get the first (and likely only) output from the dictionary
+        prediction = list(prediction.values())[0]
+    
+    # Create binary mask
+    mask = (prediction[0] > 0.5).astype(np.uint8)
     mask = cv2.resize(mask, (image.shape[1], image.shape[0]))
     
-    overlay = cv2.applyColorMap(mask, cv2.COLORMAP_JET)
-    return cv2.addWeighted(image, 0.7, overlay, 0.3, 0)
+    # Ensure image is in RGB format
+    if len(image.shape) == 3 and image.shape[2] == 3:
+        # Check if image is BGR and convert to RGB
+        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) if image.max() > 1 else (image * 255).astype(np.uint8)
+    else:
+        image_rgb = image
+    
+    # Create colored overlay for lane detection (green for lanes)
+    colored_mask = np.zeros_like(image_rgb)
+    colored_mask[mask == 1] = [0, 255, 0]  # Green color for detected lanes
+    
+    # Blend the original image with the colored mask
+    result = cv2.addWeighted(image_rgb, 0.8, colored_mask, 0.2, 0)
+    
+    return result
 
 def run_training_with_logs(epochs, log_container):
     """Update config and run training with real-time logs"""
@@ -87,11 +109,11 @@ def run_training_with_logs(epochs, log_container):
 st.title("Lane Segmentation Model")
 
 # Load model
-model = load_model()
+model, model_path = load_model()
 if model is None:
     st.error("No model found. Please train a model first.")
 else:
-    st.success("Model loaded successfully!")
+    st.success(f"Model loaded successfully from: {model_path}")
 
 # Inference Section
 st.header("Inference")
