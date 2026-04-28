@@ -1,3 +1,4 @@
 opencv-python-headless
 albumentations
 keras-unet-collection
+streamlit
