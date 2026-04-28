@@ -58,24 +58,18 @@ def process_image(image, model):
         # Get the first (and likely only) output from the dictionary
         prediction = list(prediction.values())[0]
     
-    # Create binary mask
-    mask = (prediction[0] > 0.5).astype(np.uint8)
+    # FIXED VERSION
+
+    mask = (prediction[0] > 0.5).astype(np.uint8).squeeze()
     mask = cv2.resize(mask, (image.shape[1], image.shape[0]))
-    
-    # Ensure image is in RGB format
-    if len(image.shape) == 3 and image.shape[2] == 3:
-        # Check if image is BGR and convert to RGB
-        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) if image.max() > 1 else (image * 255).astype(np.uint8)
-    else:
-        image_rgb = image
-    
-    # Create colored overlay for lane detection (green for lanes)
+
+    image_rgb = image.copy()
+
     colored_mask = np.zeros_like(image_rgb)
-    colored_mask[mask == 1] = [0, 255, 0]  # Green color for detected lanes
-    
-    # Blend the original image with the colored mask
+    colored_mask[mask == 1] = [0, 255, 0]
+
     result = cv2.addWeighted(image_rgb, 0.8, colored_mask, 0.2, 0)
-    
+        
     return result
 
 def run_training_with_logs(epochs, log_container):
