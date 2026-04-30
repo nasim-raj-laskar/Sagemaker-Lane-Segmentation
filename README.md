@@ -7,72 +7,7 @@
 
 Pixel-level binary semantic segmentation of lane boundaries using a fully-convolutional U-Net encoder-decoder trained on 289 annotated road images. The pipeline integrates SageMaker Training Jobs, SageMaker Model Registry with threshold-gated approval, MLflow experiment tracking, and a Streamlit inference frontend backed by TFSMLayer-wrapped SavedModel artifacts.
 
-```mermaid
-flowchart TB
-    subgraph DATA["Data Layer"]
-        D1(["Images\n256x832 RGB"])
-        D2(["Masks\nuint8 · {0,255}"])
-        D3[("S3\nraw-data/")]
-        D1 & D2 -->|s3 sync| D3
-    end
-
-    subgraph TRAIN["Training · ml.g4dn.xlarge · T4 16 GiB"]
-        T1["main.py"]
-        T2["data_loader.py\ntf.data pipeline"]
-        T3["model.py\nU-Net · filters 64-1024"]
-        T4["train.py\nDice loss · Adam 1e-4"]
-        T5[("SavedModel\n/opt/ml/model/")]
-        T1 --> T2 --> T3 --> T4 --> T5
-    end
-
-    subgraph TRACK["Experiment Tracking"]
-        E1["mlflow_config.py\nOIDC auth"]
-        E2[("MLflow Server\nparams + metrics")]
-        E1 -->|step=epoch| E2
-    end
-
-    subgraph REGISTRY["Model Registry"]
-        R1["model_registry.py\nCreateModelPackage"]
-        R2{"val_acc\n>= threshold?"}
-        R3["Approved"]
-        R4["Pending"]
-        R5["model_registry_utils.py"]
-        R6[("S3\nmodel-artifacts/vN/")]
-        R1 --> R2
-        R2 -->|yes| R3
-        R2 -->|no| R4
-        R4 -->|manual patch| R5 --> R3
-    end
-
-    subgraph SERVE["Inference Layer"]
-        S1["app.py\nresolve Approved ARN"]
-        S2["S3 download\ntar.gz to models/"]
-        S3["TFSMLayer\nserving_default"]
-        S4["tf.keras.Model\n256x832x3 to mask"]
-        S5["Streamlit\n:8501"]
-        S1 --> S2 --> S3 --> S4 --> S5
-    end
-
-    D3 --> T1
-    T4 -->|mlflow context| E1
-    T5 -->|tar.gz| R6
-    R6 --> R1
-    R3 --> S1
-
-    classDef data     fill:#1e3a5f,stroke:#4a9eff,color:#cce4ff
-    classDef train    fill:#1a3a2a,stroke:#4caf7d,color:#c8f0d8
-    classDef track    fill:#2d1f4e,stroke:#9b6dff,color:#e0d0ff
-    classDef registry fill:#3a2a10,stroke:#ffaa33,color:#ffeacc
-    classDef serve    fill:#3a1a1a,stroke:#ff6b6b,color:#ffd0d0
-    classDef decision fill:#1a1a2e,stroke:#ffffff,color:#ffffff
-
-    class D1,D2,D3 data
-    class T1,T2,T3,T4,T5 train
-    class E1,E2 track
-    class R1,R3,R4,R5,R6 registry
-    class R2 decision
-    class S1,S2,S3,S4,S5 serve
-```
+![](assets/arch.png)
 
 ## Architecture
 
