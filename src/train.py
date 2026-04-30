@@ -5,9 +5,11 @@ import tarfile
 import tensorflow as tf
 import boto3
 import json
+import mlflow
 from datetime import datetime
 from data_loader import DataLoader
 from model import create_unet_model
+from mlflow_config import setup_mlflow, log_metrics, log_params
 
 def setup_gpu():
     """Configure GPU settings"""
@@ -53,6 +55,27 @@ def main():
     setup_gpu()
     config = load_model_config()
     
+    # Setup MLflow tracking
+    mlflow_enabled = setup_mlflow()
+    
+    if mlflow_enabled:
+        # Start MLflow run
+        with mlflow.start_run(run_name=f"lane_seg_{datetime.now().strftime('%Y%m%d_%H%M%S')}"):
+            # Log hyperparameters
+            log_params({
+                'epochs': config['epochs'],
+                'batch_size': config['batch_size'],
+                'learning_rate': config['learning_rate'],
+                'img_height': config['img_height'],
+                'img_width': config['img_width']
+            })
+            
+            run_training(config)
+    else:
+        run_training(config)
+
+def run_training(config):
+    
     # Data paths
     if os.environ.get('SM_CHANNEL_TRAIN'):
         image_dir = os.path.join(os.environ['SM_CHANNEL_TRAIN'], 'image')
@@ -84,6 +107,15 @@ def main():
         verbose=config['verbose']
     )
     
+    # Log training metrics to MLflow
+    for epoch in range(len(history.history['loss'])):
+        log_metrics({
+            'train_loss': history.history['loss'][epoch],
+            'val_loss': history.history['val_loss'][epoch],
+            'train_accuracy': history.history['binary_accuracy'][epoch],
+            'val_accuracy': history.history['val_binary_accuracy'][epoch]
+        }, step=epoch)
+    
     # Save model in SageMaker serving format
     model_dir = os.environ.get('SM_MODEL_DIR', "/opt/ml/model")
     serving_model_dir = os.path.join(model_dir, "1")
@@ -111,7 +143,7 @@ def main():
     except Exception as e:
         print(f"Failed to upload model to S3: {e}")
     
-    # Print final metrics
+    # Print and log final metrics
     final_loss = history.history['loss'][-1]
     final_val_loss = history.history['val_loss'][-1]
     final_acc = history.history['binary_accuracy'][-1]
@@ -121,6 +153,14 @@ def main():
     print(f"Final validation loss: {final_val_loss:.4f}")
     print(f"Final training accuracy: {final_acc:.4f}")
     print(f"Final validation accuracy: {final_val_acc:.4f}")
+    
+    # Log final metrics
+    log_metrics({
+        'final_train_loss': final_loss,
+        'final_val_loss': final_val_loss,
+        'final_train_accuracy': final_acc,
+        'final_val_accuracy': final_val_acc
+    })
 
 if __name__ == '__main__':
     main()

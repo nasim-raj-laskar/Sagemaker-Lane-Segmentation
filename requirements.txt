@@ -2,3 +2,4 @@ opencv-python-headless
 albumentations
 keras-unet-collection
 streamlit
+mlflow==2.8.1
