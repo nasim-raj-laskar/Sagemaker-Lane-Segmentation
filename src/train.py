@@ -49,7 +49,8 @@ def load_model_config():
         's3_bucket': hyperparams.get('s3-bucket', 'self-driving-perceptron').strip('"'),
         's3_model_prefix': hyperparams.get('s3-model-prefix', 'model-artifacts/lane_segmentation_model').strip('"'),
         'timestamp_format': hyperparams.get('timestamp-format', '%Y%m%d_%H%M%S').strip('"'),
-        'accuracy_threshold': float(hyperparams.get('accuracy-threshold', 0.8))
+        'accuracy_threshold': float(hyperparams.get('accuracy-threshold', 0.8)),
+        'mlflow_arn': hyperparams.get('mlflow-arn', '').strip('"')
     }
     return config
 
@@ -58,7 +59,7 @@ def main():
     config = load_model_config()
     
     # Setup MLflow tracking
-    mlflow_enabled = setup_mlflow()
+    mlflow_enabled = setup_mlflow(config.get('mlflow_arn'))
     
     if mlflow_enabled:
         # Start MLflow run

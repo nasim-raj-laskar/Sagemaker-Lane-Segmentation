@@ -4,11 +4,12 @@ import os
 import mlflow
 from dotenv import load_dotenv
 
-def setup_mlflow():
-    """Setup MLflow tracking with SageMaker MLflow server"""
-    load_dotenv()
+def setup_mlflow(mlflow_arn=None):
+    """Setup MLflow tracking with SageMaker MLflow server or local"""
+    if not mlflow_arn:
+        load_dotenv()
+        mlflow_arn = os.getenv('MLFLOW_ARN')
     
-    mlflow_arn = os.getenv('MLFLOW_ARN')
     if mlflow_arn:
         # Extract region and app name from ARN
         arn_parts = mlflow_arn.split(':')
@@ -21,8 +22,10 @@ def setup_mlflow():
         print(f"MLflow tracking URI set to: {tracking_uri}")
         return True
     else:
-        print("MLFLOW_ARN not found in environment variables")
-        return False
+        # Use local MLflow
+        mlflow.set_tracking_uri("file:./mlruns")
+        print("Using local MLflow tracking")
+        return True
 
 def log_metrics(metrics_dict, step=None):
     """Log metrics to MLflow"""

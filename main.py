@@ -59,7 +59,8 @@ def launch_training_job():
             's3-bucket': model_config['s3_bucket'],
             's3-model-prefix': model_config['s3_model_prefix'],
             'timestamp-format': model_config['timestamp_format'],
-            'accuracy-threshold': model_config['accuracy_threshold']
+            'accuracy-threshold': model_config['accuracy_threshold'],
+            'mlflow-arn': os.getenv('MLFLOW_ARN', '')
         },
         output_path=f"s3://{train_config['s3']['bucket']}/{train_config['s3']['model_artifacts_path']}/",
         code_location=f"s3://{train_config['s3']['bucket']}/{train_config['s3']['code_location']}",
