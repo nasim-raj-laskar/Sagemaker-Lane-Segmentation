@@ -130,34 +130,47 @@ if uploaded_file and model:
             st.image(result)
     
     elif file_type == 'video':
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as tmp:
-            tmp.write(uploaded_file.read())
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as input_tmp:
+            input_tmp.write(uploaded_file.read())
             
-            cap = cv2.VideoCapture(tmp.name)
-            frames = []
+            cap = cv2.VideoCapture(input_tmp.name)
+            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
             
             progress_bar = st.progress(0)
             frame_count = 0
-            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            processed_frames = []
             
-            while frame_count < min(total_frames, 100):  # Limit frames
+            # Process frames and collect them
+            while True:
                 ret, frame = cap.read()
                 if not ret:
                     break
                 
                 result_frame = process_image(frame, model)
-                frames.append(result_frame)
+                processed_frames.append(Image.fromarray(result_frame))
                 
                 frame_count += 1
-                progress_bar.progress(frame_count / min(total_frames, 100))
+                progress_bar.progress(frame_count / total_frames)
             
             cap.release()
-            os.unlink(tmp.name)
             
-            if frames:
-                st.subheader("Processed Video Frames")
-                for i, frame in enumerate(frames[::10]):  # Show every 10th frame
-                    st.image(frame, caption=f"Frame {i*10}")
+            # Save as GIF for reliable web playback
+            if processed_frames:
+                gif_path = tempfile.mktemp(suffix='.gif')
+                processed_frames[0].save(
+                    gif_path,
+                    save_all=True,
+                    append_images=processed_frames[1:],
+                    duration=100,  # 100ms per frame
+                    loop=0
+                )
+                
+                st.subheader("Processed Video")
+                st.image(gif_path)
+                
+                os.unlink(gif_path)
+            
+            os.unlink(input_tmp.name)
 
 # Training Section
 st.header("Train Model")

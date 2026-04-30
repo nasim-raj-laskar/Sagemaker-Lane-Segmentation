@@ -1,5 +1,5 @@
 batch_size: 4
-epochs: 2
+epochs: 15
 img_height: 256
 img_width: 832
 learning_rate: 0.0001
