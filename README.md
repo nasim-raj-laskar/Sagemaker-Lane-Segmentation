@@ -1,9 +1,19 @@
-# Lane Segmentation MLOps Pipeline on Amazon Sagemaker
+<h1 align="center">Lane Segmentation MLOps Pipeline on Amazon SageMaker</h1>
 
-[![TensorFlow](https://img.shields.io/badge/TensorFlow-2.11.0-FF6F00?style=flat&logo=tensorflow)](https://tensorflow.org/)
-[![SageMaker](https://img.shields.io/badge/AWS-SageMaker-FF9900?style=flat&logo=amazon-aws)](https://aws.amazon.com/sagemaker/)
-[![MLflow](https://img.shields.io/badge/MLflow-2.8.1-0194E2?style=flat&logo=mlflow)](https://mlflow.org/)
-[![Python](https://img.shields.io/badge/Python-3.9+-3776AB?style=flat&logo=python)](https://python.org/)
+<p align="center">
+  <a href="https://tensorflow.org/">
+    <img src="https://img.shields.io/badge/TensorFlow-2.11.0-FF6F00?style=flat&logo=tensorflow" />
+  </a>
+  <a href="https://aws.amazon.com/sagemaker/">
+    <img src="https://img.shields.io/badge/AWS-SageMaker-FF9900?style=flat&logo=amazon-aws" />
+  </a>
+  <a href="https://mlflow.org/">
+    <img src="https://img.shields.io/badge/MLflow-2.8.1-0194E2?style=flat&logo=mlflow" />
+  </a>
+  <a href="https://python.org/">
+    <img src="https://img.shields.io/badge/Python-3.9+-3776AB?style=flat&logo=python" />
+  </a>
+</p>
 
 Pixel-level binary semantic segmentation of lane boundaries using a fully-convolutional U-Net encoder-decoder trained on 289 annotated road images. The pipeline integrates SageMaker Training Jobs, SageMaker Model Registry with threshold-gated approval, MLflow experiment tracking, and a Streamlit inference frontend backed by TFSMLayer-wrapped SavedModel artifacts.
 
