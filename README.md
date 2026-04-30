@@ -1,4 +1,4 @@
-# Lane Segmentation MLOps Pipeline
+# Lane Segmentation MLOps Pipeline on Amazon Sagemaker
 
 [![TensorFlow](https://img.shields.io/badge/TensorFlow-2.11.0-FF6F00?style=flat&logo=tensorflow)](https://tensorflow.org/)
 [![SageMaker](https://img.shields.io/badge/AWS-SageMaker-FF9900?style=flat&logo=amazon-aws)](https://aws.amazon.com/sagemaker/)
