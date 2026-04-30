@@ -145,18 +145,20 @@ lane-segmentation-pipeline/
 **Requirements:** AWS account with `sagemaker:*`, `s3:*`, `iam:PassRole` permissions; Python ≥ 3.9; AWS CLI v2.
 
 ```bash
-git clone <repository-url> && cd lane-segmentation-pipeline
+git clone https://github.com/nasim-raj-laskar/lane-segmentation-pipeline.git
+cd lane-segmentation-pipeline/
 pip install -r src/requirements.txt
 ```
 
+Create a `.env` file:
+
 ```bash
-cat > .env << EOF
 AWS_ACCOUNT_ID=<account-id>
 AWS_REGION=<region>
 S3_BUCKET=<bucket>
 SAGEMAKER_ROLE=SageMakerExecutionRole
 MLFLOW_ARN=arn:aws:sagemaker:<region>:<account>:mlflow-tracking-server/<server-name>
-EOF
+
 ```
 
 ```bash
@@ -355,34 +357,6 @@ with mlflow.start_run(run_name=f"lane_seg_{timestamp}"):
 ```
 
 Tracked metrics: Dice loss, binary cross-entropy, binary accuracy, Mean IoU, epoch wall-clock time, GPU utilization, peak VRAM allocation, total parameter count, SavedModel size on disk, and batch inference latency (p50/p95).
-
-## Diagnostics
-
-**MLflow tracking server unreachable**
-```bash
-aws sagemaker describe-mlflow-tracking-server --tracking-server-name <server-name>
-curl -I https://<server-name>.<region>.aws/health
-```
-
-**`sagemaker:CreateModelPackage` denied**
-```bash
-aws iam simulate-principal-policy \
-  --policy-source-arn arn:aws:iam::<account>:role/SageMakerExecutionRole \
-  --action-names sagemaker:CreateModelPackage \
-  --resource-arns "*"
-```
-
-**Training job failure**
-```bash
-aws logs filter-log-events \
-  --log-group-name /aws/sagemaker/TrainingJobs \
-  --log-stream-name-prefix <job-name> \
-  --filter-pattern "ERROR"
-```
-
-**OOM on T4 (16 GiB VRAM):** Reduce `batch_size` in `config/model.yaml`. At `(256, 832, 3)` input resolution, `batch_size=4` consumes ~11 GiB VRAM with mixed-precision disabled.
-
-**Inference latency:** Apply TensorRT graph optimization (`trtexec`) to the SavedModel for sub-10ms p95 latency on T4. Enable S3 Transfer Acceleration on the artifact bucket for multi-region deployments with large SavedModel binaries.
 
 ## References
 
