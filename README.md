@@ -1,1 +1,394 @@
-# Autonomous Lane Segmentation with Enterprise MLOps Pipeline\n\n[![TensorFlow](https://img.shields.io/badge/TensorFlow-2.11.0-FF6F00?style=flat&logo=tensorflow)](https://tensorflow.org/)\n[![SageMaker](https://img.shields.io/badge/AWS-SageMaker-FF9900?style=flat&logo=amazon-aws)](https://aws.amazon.com/sagemaker/)\n[![MLflow](https://img.shields.io/badge/MLflow-2.8.1-0194E2?style=flat&logo=mlflow)](https://mlflow.org/)\n[![Python](https://img.shields.io/badge/Python-3.9+-3776AB?style=flat&logo=python)](https://python.org/)\n\n> **Production-grade semantic segmentation pipeline** implementing U-Net architecture with automated MLOps workflows, SageMaker Model Registry integration, and enterprise governance controls.\n\n![Lane Segmentation UI](assets/ui.png)\n\n## 🏗️ Architecture Overview\n\n### Deep Learning Pipeline\n- **Encoder-Decoder Architecture**: U-Net with skip connections for precise pixel-level lane boundary detection\n- **Loss Function**: Custom Dice coefficient optimization for handling class imbalance in road segmentation\n- **Data Augmentation**: Albumentations-based geometric and photometric transformations\n- **Inference Engine**: TensorFlow SavedModel format with TFSMLayer integration for Keras 3.x compatibility\n\n### MLOps Infrastructure\n- **Distributed Training**: SageMaker Training Jobs on GPU-optimized instances (ml.g4dn.xlarge)\n- **Model Registry**: Automated registration with approval workflows and version control\n- **Experiment Tracking**: MLflow integration with SageMaker MLflow Apps\n- **Artifact Management**: S3-based versioned storage with semantic versioning (v1/, v2/, v3/)\n- **Quality Gates**: Automated model approval based on configurable performance thresholds\n\n### Production Deployment\n- **Model Serving**: Streamlit-based inference application with real-time processing\n- **Governance**: Registry-based model lifecycle management with approval workflows\n- **Monitoring**: Comprehensive metrics logging and performance tracking\n\n## 📊 Technical Specifications\n\n### Model Architecture\n```python\n# U-Net Configuration\nInput Shape: (256, 832, 3)  # Height x Width x Channels\nEncoder Filters: [64, 128, 256, 512]\nDecoder Filters: [512, 256, 128, 64]\nActivation: ReLU\nOutput Activation: Sigmoid\nOptimizer: Adam (lr=1e-4)\nLoss: Dice Coefficient\nMetrics: [Binary Accuracy, Mean IoU]\n```\n\n### Infrastructure Stack\n```yaml\nCompute:\n  Training: ml.g4dn.xlarge (4 vCPU, 16GB RAM, 1x T4 GPU)\n  Framework: TensorFlow 2.11.0\n  Container: AWS Deep Learning Container\n  \nStorage:\n  Training Data: S3 (289 images, 289 masks)\n  Model Artifacts: S3 with versioning\n  Experiment Logs: MLflow Tracking Server\n  \nOrchestration:\n  Training Jobs: SageMaker Training\n  Model Registry: SageMaker Model Registry\n  Experiment Tracking: SageMaker MLflow Apps\n```\n\n## 🗂️ Repository Structure\n\n```\nSelf-Driving_percerptron/\n├── 📁 src/                          # Core ML pipeline\n│   ├── 🐍 train.py                  # Training orchestration with registry integration\n│   ├── 🧠 model.py                  # U-Net architecture implementation\n│   ├── 📊 data_loader.py            # Data preprocessing and augmentation\n│   ├── 📈 mlflow_config.py          # Experiment tracking configuration\n│   ├── 🏛️ model_registry.py         # SageMaker Model Registry operations\n│   └── 📋 requirements.txt          # Python dependencies\n├── ⚙️ config/                       # Configuration management\n│   ├── 🎛️ model.yaml               # Hyperparameters and training config\n│   └── 🏗️ train.yaml               # SageMaker infrastructure config\n├── 📸 dataset/                      # Training dataset\n│   ├── 🖼️ image/                   # RGB road images (289 samples)\n│   └── 🎯 mask/                     # Binary lane masks (289 samples)\n├── 🎨 assets/                       # Documentation assets\n│   ├── 🖥️ ui.png                   # Application interface screenshot\n│   └── 🎬 output.mp4               # Demo video\n├── 🤖 models/                       # Local model artifacts\n├── 🌐 app.py                        # Streamlit inference application\n├── 🚀 main.py                       # SageMaker training job launcher\n├── 🛠️ model_registry_utils.py       # CLI model management utilities\n└── 📚 MODEL_REGISTRY.md             # Detailed MLOps documentation\n```\n\n## 🔧 Environment Setup\n\n### Prerequisites\n- **AWS Account** with SageMaker, S3, and IAM permissions\n- **Python 3.9+** with pip package manager\n- **AWS CLI** configured with appropriate credentials\n- **SageMaker MLflow App** (optional, for experiment tracking)\n\n### Installation\n\n1. **Repository Initialization**\n   ```bash\n   git clone <repository-url>\n   cd Self-Driving_percerptron\n   ```\n\n2. **Dependency Installation**\n   ```bash\n   pip install -r requirements.txt\n   ```\n\n3. **Environment Configuration**\n   ```bash\n   # Configure AWS credentials and MLOps parameters\n   cat > .env << EOF\n   AWS_ACCOUNT_ID=<your-aws-account-id>\n   AWS_REGION=<your-aws-region>\n   S3_BUCKET=<your-s3-bucket>\n   SAGEMAKER_ROLE=SageMakerExecutionRole\n   MLFLOW_ARN=arn:aws:sagemaker:<region>:<account>:mlflow-app/<app-name>\n   EOF\n   ```\n\n4. **Data Pipeline Setup**\n   ```bash\n   # Upload training dataset to S3\n   aws s3 sync dataset/ s3://<your-bucket>/raw-data/\n   ```\n\n## 🚀 Training Pipeline\n\n### Quick Start Training\n```bash\n# Single epoch validation run\npython main.py\n```\n\n### Production Training Configuration\n```yaml\n# config/model.yaml\nepochs: 15\nbatch_size: 4\nlearning_rate: 0.0001\naccuracy_threshold: 0.85  # Auto-approval threshold\nimg_height: 256\nimg_width: 832\n```\n\n### Advanced Training Parameters\n```python\n# Hyperparameter optimization\nconfig = {\n    'epochs': 15,\n    'batch_size': 4,\n    'learning_rate': 1e-4,\n    'accuracy_threshold': 0.8,\n    'normalization_factor': 255.0,\n    'test_size': 0.2,\n    'random_state': 42\n}\n```\n\n## 🏛️ Model Registry Operations\n\n### Registry Management CLI\n```bash\n# List all registered models with metadata\npython model_registry_utils.py\n\n# Manual model approval\npython model_registry_utils.py approve \\\n  arn:aws:sagemaker:region:account:model-package/lane-segmentation-models/1\n```\n\n### Automated Approval Workflow\n```python\n# Approval logic implementation\ndef register_model(self, model_s3_uri, metrics, accuracy_threshold=0.8):\n    val_accuracy = metrics.get('final_val_accuracy', 0)\n    approval_status = \"Approved\" if val_accuracy >= accuracy_threshold else \"PendingManualApproval\"\n    \n    # Register with SageMaker Model Registry\n    response = self.sagemaker.create_model_package({\n        'ModelPackageGroupName': 'lane-segmentation-models',\n        'ModelApprovalStatus': approval_status,\n        'InferenceSpecification': {\n            'Containers': [{\n                'Image': f'763104351884.dkr.ecr.{region}.amazonaws.com/tensorflow-inference:2.12-cpu',\n                'ModelDataUrl': model_s3_uri\n            }]\n        }\n    })\n```\n\n## 🌐 Inference Application\n\n### Streamlit Web Interface\n```bash\n# Launch production inference server\nstreamlit run app.py --server.port 8501 --server.address 0.0.0.0\n```\n\n### Application Features\n- **Real-time Inference**: Upload images/videos for lane detection\n- **Model Management**: Automatic loading of latest approved models\n- **Training Integration**: Launch training jobs with live log streaming\n- **Performance Monitoring**: Model metrics and status visualization\n\n### Model Loading Architecture\n```python\n@st.cache_resource\ndef load_model():\n    \"\"\"Load latest approved model from SageMaker Model Registry\"\"\"\n    registry = ModelRegistry()\n    model_s3_uri, model_package_arn = registry.get_latest_approved_model()\n    \n    # TensorFlow SavedModel loading with Keras 3.x compatibility\n    model_layer = tf.keras.layers.TFSMLayer('models/approved/1', \n                                           call_endpoint='serving_default')\n    inputs = tf.keras.Input(shape=(256, 832, 3))\n    outputs = model_layer(inputs)\n    model = tf.keras.Model(inputs=inputs, outputs=outputs)\n    \n    return model, f\"Approved Model: {model_package_arn}\"\n```\n\n## 📈 MLOps Workflow\n\n### Model Lifecycle Management\n```mermaid\ngraph TD\n    A[Training Job Execution] --> B[Model Performance Evaluation]\n    B --> C{Validation Accuracy ≥ Threshold?}\n    C -->|Yes| D[Auto-Approved Status]\n    C -->|No| E[PendingManualApproval Status]\n    D --> F[Production Deployment]\n    E --> G[Manual Quality Review]\n    G --> H[Approve/Reject Decision]\n    H -->|Approve| F\n    H -->|Reject| I[Model Archived]\n    F --> J[Streamlit Application]\n    J --> K[Real-time Inference]\n```\n\n### S3 Artifact Organization\n```\ns3://bucket/model-artifacts/lane_segmentation_model/\n├── v1/\n│   ├── 20240430_143022.tar.gz    # Model binary (TensorFlow SavedModel)\n│   └── metrics.json              # Performance metrics and metadata\n├── v2/\n│   ├── 20240430_150145.tar.gz\n│   └── metrics.json\n└── v3/\n    ├── 20240430_152301.tar.gz\n    └── metrics.json\n```\n\n### Metrics Schema\n```json\n{\n  \"final_train_loss\": 0.6542,\n  \"final_val_loss\": 0.4382,\n  \"final_train_accuracy\": 0.3605,\n  \"final_val_accuracy\": 0.8366,\n  \"epochs\": 15,\n  \"batch_size\": 4,\n  \"learning_rate\": 0.0001,\n  \"timestamp\": \"20240430_164055\",\n  \"version\": 3\n}\n```\n\n## 🔬 Experiment Tracking\n\n### MLflow Integration\n```python\n# Experiment logging configuration\nwith mlflow.start_run(run_name=f\"lane_seg_{timestamp}\"):\n    # Log hyperparameters\n    mlflow.log_params({\n        'epochs': config['epochs'],\n        'batch_size': config['batch_size'],\n        'learning_rate': config['learning_rate']\n    })\n    \n    # Log training metrics per epoch\n    for epoch in range(epochs):\n        mlflow.log_metrics({\n            'train_loss': history.history['loss'][epoch],\n            'val_loss': history.history['val_loss'][epoch],\n            'train_accuracy': history.history['binary_accuracy'][epoch],\n            'val_accuracy': history.history['val_binary_accuracy'][epoch]\n        }, step=epoch)\n```\n\n### Performance Metrics\n- **Loss Functions**: Dice coefficient, Binary cross-entropy\n- **Accuracy Metrics**: Binary accuracy, Mean IoU (Intersection over Union)\n- **Training Metrics**: Epoch duration, GPU utilization, Memory usage\n- **Model Metrics**: Parameter count, Model size, Inference latency\n\n## ⚙️ Configuration Management\n\n### Model Configuration (`config/model.yaml`)\n```yaml\n# Training hyperparameters\nepochs: 15\nbatch_size: 4\nlearning_rate: 0.0001\naccuracy_threshold: 0.8\n\n# Data preprocessing\nimg_height: 256\nimg_width: 832\nnormalization_factor: 255.0\nmask_threshold: 255\n\n# Data splitting\ntest_size: 0.2\nrandom_state: 42\n\n# Infrastructure\ns3_bucket: self-driving-perceptron\ns3_model_prefix: model-artifacts/lane_segmentation_model\ntimestamp_format: '%Y%m%d_%H%M%S'\n```\n\n### Infrastructure Configuration (`config/train.yaml`)\n```yaml\nsagemaker:\n  instance_type: ml.g4dn.xlarge\n  instance_count: 1\n  framework_version: \"2.11.0\"\n  py_version: py39\n  \ns3:\n  bucket: self-driving-perceptron\n  data_path: raw-data\n  model_artifacts_path: model-artifacts\n  code_location: code\n  \ntraining:\n  job_name_prefix: lane-segmentation-training\n```\n\n## 🛠️ Advanced Customization\n\n### Custom Model Architecture\n```python\ndef create_unet_model(config):\n    \"\"\"Enhanced U-Net with attention mechanisms\"\"\"\n    input_shape = (config['img_height'], config['img_width'], 3)\n    \n    # Encoder with residual connections\n    model = models.unet_2d(\n        input_shape,\n        filter_num=[64, 128, 256, 512, 1024],  # Deeper architecture\n        n_labels=1,\n        activation='ReLU',\n        output_activation='Sigmoid',\n        batch_norm=True,\n        pool='max',\n        unpool='bilinear'\n    )\n    \n    # Custom loss function with class weighting\n    model.compile(\n        optimizer=tf.keras.optimizers.Adam(config['learning_rate']),\n        loss=dice_loss,\n        metrics=[\n            tf.keras.metrics.BinaryAccuracy(),\n            tf.keras.metrics.MeanIoU(num_classes=2)\n        ]\n    )\n    \n    return model\n```\n\n### Custom Approval Logic\n```python\ndef register_model(self, model_s3_uri, metrics, accuracy_threshold=0.8):\n    \"\"\"Multi-criteria model approval\"\"\"\n    val_accuracy = metrics.get('final_val_accuracy', 0)\n    val_loss = metrics.get('final_val_loss', 1.0)\n    mean_iou = metrics.get('mean_iou', 0)\n    \n    # Complex approval criteria\n    approval_status = \"Approved\" if (\n        val_accuracy >= accuracy_threshold and \n        val_loss < 0.3 and\n        mean_iou > 0.7\n    ) else \"PendingManualApproval\"\n    \n    return self._create_model_package(model_s3_uri, approval_status, metrics)\n```\n\n## 🚨 Troubleshooting & Diagnostics\n\n### Common Issues Resolution\n\n**MLflow Connection Failures**\n```bash\n# Verify MLflow App status\naws sagemaker describe-mlflow-tracking-server --tracking-server-name <app-name>\n\n# Check network connectivity\ncurl -I https://<app-name>.<region>.aws/health\n```\n\n**Model Registry Permission Errors**\n```bash\n# Validate IAM permissions\naws iam simulate-principal-policy \\\n  --policy-source-arn arn:aws:iam::account:role/SageMakerExecutionRole \\\n  --action-names sagemaker:CreateModelPackage \\\n  --resource-arns \"*\"\n```\n\n**Training Job Failures**\n```bash\n# CloudWatch logs analysis\naws logs filter-log-events \\\n  --log-group-name /aws/sagemaker/TrainingJobs \\\n  --filter-pattern \"ERROR\"\n```\n\n### Performance Optimization\n- **GPU Memory**: Reduce batch size for OOM errors\n- **Data Loading**: Implement prefetching and parallel processing\n- **Model Serving**: Use TensorRT optimization for inference acceleration\n- **Storage**: Enable S3 Transfer Acceleration for large datasets\n\n## 📚 Technical References\n\n- [SageMaker Model Registry API](https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_CreateModelPackage.html)\n- [MLflow Tracking Server](https://mlflow.org/docs/latest/tracking.html#mlflow-tracking-servers)\n- [TensorFlow SavedModel Format](https://www.tensorflow.org/guide/saved_model)\n- [U-Net Architecture Paper](https://arxiv.org/abs/1505.04597)\n- [Dice Loss Implementation](https://arxiv.org/abs/1606.04797)\n\n## 🤝 Contributing\n\n1. **Fork Repository**: Create personal fork of the project\n2. **Feature Branch**: `git checkout -b feature/enhancement-name`\n3. **Code Standards**: Follow PEP 8 and type hints\n4. **Testing**: Add unit tests for new functionality\n5. **Documentation**: Update technical documentation\n6. **Pull Request**: Submit with detailed description\n\n## 📄 License\n\nThis project is licensed under the MIT License - see [LICENSE](LICENSE) file for details.\n\n---\n\n**Built with ❤️ for autonomous vehicle perception systems**
+# Lane Segmentation MLOps Pipeline
+
+[![TensorFlow](https://img.shields.io/badge/TensorFlow-2.11.0-FF6F00?style=flat&logo=tensorflow)](https://tensorflow.org/)
+[![SageMaker](https://img.shields.io/badge/AWS-SageMaker-FF9900?style=flat&logo=amazon-aws)](https://aws.amazon.com/sagemaker/)
+[![MLflow](https://img.shields.io/badge/MLflow-2.8.1-0194E2?style=flat&logo=mlflow)](https://mlflow.org/)
+[![Python](https://img.shields.io/badge/Python-3.9+-3776AB?style=flat&logo=python)](https://python.org/)
+
+Pixel-level binary semantic segmentation of lane boundaries using a fully-convolutional U-Net encoder-decoder trained on 289 annotated road images. The pipeline integrates SageMaker Training Jobs, SageMaker Model Registry with threshold-gated approval, MLflow experiment tracking, and a Streamlit inference frontend backed by TFSMLayer-wrapped SavedModel artifacts.
+
+```mermaid
+flowchart TB
+    subgraph DATA["Data Layer"]
+        D1(["Images\n256x832 RGB"])
+        D2(["Masks\nuint8 · {0,255}"])
+        D3[("S3\nraw-data/")]
+        D1 & D2 -->|s3 sync| D3
+    end
+
+    subgraph TRAIN["Training · ml.g4dn.xlarge · T4 16 GiB"]
+        T1["main.py"]
+        T2["data_loader.py\ntf.data pipeline"]
+        T3["model.py\nU-Net · filters 64-1024"]
+        T4["train.py\nDice loss · Adam 1e-4"]
+        T5[("SavedModel\n/opt/ml/model/")]
+        T1 --> T2 --> T3 --> T4 --> T5
+    end
+
+    subgraph TRACK["Experiment Tracking"]
+        E1["mlflow_config.py\nOIDC auth"]
+        E2[("MLflow Server\nparams + metrics")]
+        E1 -->|step=epoch| E2
+    end
+
+    subgraph REGISTRY["Model Registry"]
+        R1["model_registry.py\nCreateModelPackage"]
+        R2{"val_acc\n>= threshold?"}
+        R3["Approved"]
+        R4["Pending"]
+        R5["model_registry_utils.py"]
+        R6[("S3\nmodel-artifacts/vN/")]
+        R1 --> R2
+        R2 -->|yes| R3
+        R2 -->|no| R4
+        R4 -->|manual patch| R5 --> R3
+    end
+
+    subgraph SERVE["Inference Layer"]
+        S1["app.py\nresolve Approved ARN"]
+        S2["S3 download\ntar.gz to models/"]
+        S3["TFSMLayer\nserving_default"]
+        S4["tf.keras.Model\n256x832x3 to mask"]
+        S5["Streamlit\n:8501"]
+        S1 --> S2 --> S3 --> S4 --> S5
+    end
+
+    D3 --> T1
+    T4 -->|mlflow context| E1
+    T5 -->|tar.gz| R6
+    R6 --> R1
+    R3 --> S1
+
+    classDef data     fill:#1e3a5f,stroke:#4a9eff,color:#cce4ff
+    classDef train    fill:#1a3a2a,stroke:#4caf7d,color:#c8f0d8
+    classDef track    fill:#2d1f4e,stroke:#9b6dff,color:#e0d0ff
+    classDef registry fill:#3a2a10,stroke:#ffaa33,color:#ffeacc
+    classDef serve    fill:#3a1a1a,stroke:#ff6b6b,color:#ffd0d0
+    classDef decision fill:#1a1a2e,stroke:#ffffff,color:#ffffff
+
+    class D1,D2,D3 data
+    class T1,T2,T3,T4,T5 train
+    class E1,E2 track
+    class R1,R3,R4,R5,R6 registry
+    class R2 decision
+    class S1,S2,S3,S4,S5 serve
+```
+
+## Architecture
+
+### Model
+
+Symmetric encoder-decoder (U-Net) with lateral skip connections between mirrored resolution stages. Skip connections concatenate encoder feature maps directly into the decoder path, preserving high-frequency spatial detail lost during max-pooling downsampling.
+
+| Component | Specification |
+|---|---|
+| Input tensor | `(N, 256, 832, 3)` — float32, normalized to `[0, 1]` |
+| Encoder depth | 4 stages — filter progression `[64, 128, 256, 512]` |
+| Bottleneck | 1024 filters, no spatial downsampling |
+| Decoder depth | 4 stages — filter progression `[512, 256, 128, 64]` |
+| Upsampling | Bilinear interpolation (`unpool='bilinear'`) |
+| Output | `(N, 256, 832, 1)` — sigmoid activation, binary mask |
+| Loss | Sørensen–Dice coefficient: `L = 1 - (2·|X∩Y| + ε) / (|X| + |Y| + ε)` |
+| Optimizer | Adam, `lr=1e-4`, default β₁=0.9, β₂=0.999 |
+| Metrics | Binary accuracy, Mean IoU (`num_classes=2`) |
+
+Dice loss is preferred over binary cross-entropy here due to severe foreground/background class imbalance — lane pixels constitute a small fraction of total image area, causing BCE to converge to a degenerate all-background solution.
+
+### Infrastructure
+
+```yaml
+Compute:
+  instance_type: ml.g4dn.xlarge       # 4 vCPU, 16 GiB RAM, 1x NVIDIA T4 (16 GiB VRAM)
+  framework_version: "2.11.0"          # TF 2.11 — last version with Keras 2 API
+  container: AWS Deep Learning Container (763104351884.dkr.ecr.<region>.amazonaws.com)
+
+Storage:
+  training_data: s3://<bucket>/raw-data/          # 289 RGB images + 289 binary masks
+  model_artifacts: s3://<bucket>/model-artifacts/ # versioned tar.gz SavedModel archives
+  experiment_logs: SageMaker MLflow Tracking Server
+
+Orchestration:
+  training: SageMaker Training Jobs (managed spot optional)
+  registry: SageMaker Model Registry (ModelPackageGroup: lane-segmentation-models)
+  tracking: SageMaker MLflow Apps (OIDC-authenticated tracking server)
+```
+
+## Repository Structure
+
+```
+lane-segmentation-pipeline/
+├── src/
+│   ├── train.py              # Training loop, checkpointing, S3 artifact upload, registry registration
+│   ├── model.py              # U-Net graph construction via keras-unet-collection
+│   ├── data_loader.py        # tf.data pipeline: decode → resize → normalize → augment → batch
+│   ├── mlflow_config.py      # MLflow client init, run context manager, param/metric logging
+│   ├── model_registry.py     # SageMaker boto3 calls: create_model_package, list_model_packages
+│   └── requirements.txt
+├── config/
+│   ├── model.yaml            # Hyperparameters, data config, approval threshold
+│   └── train.yaml            # SageMaker instance config, S3 paths, job name prefix
+├── dataset/
+│   ├── image/                # 289 × RGB road frames (variable resolution, resized to 256×832)
+│   └── mask/                 # 289 × binary lane masks (uint8, values ∈ {0, 255})
+├── assets/
+│   ├── ui.png
+│   └── output.mp4
+├── models/                   # Local SavedModel cache (populated by app.py on first load)
+├── app.py                    # Streamlit frontend: inference, registry status, job launcher
+├── main.py                   # SageMaker Estimator configuration and .fit() invocation
+├── model_registry_utils.py   # CLI wrapper: list packages, patch approval status
+└── MODEL_REGISTRY.md
+```
+
+## Environment Setup
+
+**Requirements:** AWS account with `sagemaker:*`, `s3:*`, `iam:PassRole` permissions; Python ≥ 3.9; AWS CLI v2.
+
+```bash
+git clone <repository-url> && cd lane-segmentation-pipeline
+pip install -r src/requirements.txt
+```
+
+```bash
+cat > .env << EOF
+AWS_ACCOUNT_ID=<account-id>
+AWS_REGION=<region>
+S3_BUCKET=<bucket>
+SAGEMAKER_ROLE=SageMakerExecutionRole
+MLFLOW_ARN=arn:aws:sagemaker:<region>:<account>:mlflow-tracking-server/<server-name>
+EOF
+```
+
+```bash
+# Sync raw dataset to S3 input channel
+aws s3 sync dataset/ s3://<bucket>/raw-data/
+```
+
+## Training
+
+### Launch SageMaker Training Job
+
+```bash
+python main.py
+```
+
+This instantiates a `sagemaker.tensorflow.TensorFlow` estimator targeting `ml.g4dn.xlarge`, injects `config/model.yaml` hyperparameters as `--hyperparameters`, and calls `.fit()` with the S3 data channel. Training artifacts are written to `/opt/ml/model/` inside the container and automatically uploaded to S3 on job completion.
+
+### Hyperparameter Reference (`config/model.yaml`)
+
+```yaml
+epochs: 15
+batch_size: 4                  # constrained by T4 VRAM at 256×832 resolution
+learning_rate: 0.0001
+accuracy_threshold: 0.85       # minimum val_binary_accuracy for auto-approval
+img_height: 256
+img_width: 832
+normalization_factor: 255.0
+mask_threshold: 255            # binarization cutoff for mask preprocessing
+test_size: 0.2
+random_state: 42
+s3_bucket: self-driving-perceptron
+s3_model_prefix: model-artifacts/lane_segmentation_model
+timestamp_format: '%Y%m%d_%H%M%S'
+```
+
+### Infrastructure Configuration (`config/train.yaml`)
+
+```yaml
+sagemaker:
+  instance_type: ml.g4dn.xlarge
+  instance_count: 1
+  framework_version: "2.11.0"
+  py_version: py39
+
+s3:
+  bucket: self-driving-perceptron
+  data_path: raw-data
+  model_artifacts_path: model-artifacts
+  code_location: code
+
+training:
+  job_name_prefix: lane-segmentation-training
+```
+
+## Model Registry
+
+### Approval Gate Logic
+
+Post-training, `src/model_registry.py` calls `sagemaker:CreateModelPackage`. Approval status is determined by comparing `final_val_accuracy` against `accuracy_threshold`:
+
+```python
+def register_model(self, model_s3_uri, metrics, accuracy_threshold=0.8):
+    val_accuracy = metrics.get('final_val_accuracy', 0)
+    approval_status = "Approved" if val_accuracy >= accuracy_threshold else "PendingManualApproval"
+
+    self.sagemaker.create_model_package({
+        'ModelPackageGroupName': 'lane-segmentation-models',
+        'ModelApprovalStatus': approval_status,
+        'InferenceSpecification': {
+            'Containers': [{
+                'Image': f'763104351884.dkr.ecr.{region}.amazonaws.com/tensorflow-inference:2.12-cpu',
+                'ModelDataUrl': model_s3_uri
+            }]
+        }
+    })
+```
+
+For stricter multi-criteria gating (val_loss + Mean IoU):
+
+```python
+approval_status = "Approved" if (
+    val_accuracy >= accuracy_threshold and
+    val_loss < 0.3 and
+    mean_iou > 0.7
+) else "PendingManualApproval"
+```
+
+### CLI Operations
+
+```bash
+# Enumerate all model package versions with approval status and metrics
+python model_registry_utils.py
+
+# Patch approval status on a specific model package ARN
+python model_registry_utils.py approve \
+  arn:aws:sagemaker:<region>:<account>:model-package/lane-segmentation-models/1
+```
+
+### S3 Artifact Layout
+
+```
+s3://<bucket>/model-artifacts/lane_segmentation_model/
+├── v1/
+│   ├── 20240430_143022.tar.gz   # TensorFlow SavedModel (saved_model.pb + variables/)
+│   └── metrics.json
+├── v2/
+│   ├── 20240430_150145.tar.gz
+│   └── metrics.json
+└── v3/
+    ├── 20240430_152301.tar.gz
+    └── metrics.json
+```
+
+`metrics.json` schema:
+
+```json
+{
+  "final_train_loss": 0.6542,
+  "final_val_loss": 0.4382,
+  "final_train_accuracy": 0.3605,
+  "final_val_accuracy": 0.8366,
+  "epochs": 15,
+  "batch_size": 4,
+  "learning_rate": 0.0001,
+  "timestamp": "20240430_164055",
+  "version": 3
+}
+```
+
+## Inference Application
+
+### Model Loading
+
+`app.py` resolves the latest `Approved` model package ARN via `list_model_packages`, downloads the SavedModel artifact from S3, and wraps it in a `TFSMLayer` to maintain Keras 3.x functional API compatibility (Keras 3 dropped native `tf.saved_model.load` integration):
+
+```python
+@st.cache_resource
+def load_model():
+    registry = ModelRegistry()
+    model_s3_uri, model_package_arn = registry.get_latest_approved_model()
+
+    model_layer = tf.keras.layers.TFSMLayer(
+        'models/approved/1',
+        call_endpoint='serving_default'
+    )
+    inputs = tf.keras.Input(shape=(256, 832, 3))
+    outputs = model_layer(inputs)
+    return tf.keras.Model(inputs=inputs, outputs=outputs), model_package_arn
+```
+
+### Launch
+
+```bash
+streamlit run app.py --server.port 8501 --server.address 0.0.0.0
+```
+
+<p align="center">
+  <img src="assets/ui.png" alt="Streamlit inference UI — image upload, binary mask overlay, registry status panel, and training job launcher" width="900"/>
+  <br/>
+  <em>Streamlit frontend: image upload → TFSMLayer inference → binary mask overlay. Registry status and training job launcher rendered in the sidebar.</em>
+</p>
+
+## MLOps Lifecycle
+
+```mermaid
+graph TD
+    A[SageMaker Training Job] --> B[Epoch Metrics Logged to MLflow]
+    B --> C[val_binary_accuracy evaluated against threshold]
+    C -->|>= threshold| D[ModelApprovalStatus: Approved]
+    C -->|< threshold| E[ModelApprovalStatus: PendingManualApproval]
+    D --> F[app.py resolves latest Approved ARN]
+    E --> G[Manual review via model_registry_utils.py]
+    G -->|approve| F
+    G -->|reject| H[Package remains in PendingManualApproval]
+    F --> I[TFSMLayer inference serving]
+```
+
+## Experiment Tracking
+
+MLflow run context is opened in `src/train.py` before the Keras `.fit()` call. Hyperparameters are logged once; per-epoch metrics are logged with `step=epoch` for time-series visualization in the MLflow UI:
+
+```python
+with mlflow.start_run(run_name=f"lane_seg_{timestamp}"):
+    mlflow.log_params({
+        'epochs': config['epochs'],
+        'batch_size': config['batch_size'],
+        'learning_rate': config['learning_rate']
+    })
+    for epoch in range(epochs):
+        mlflow.log_metrics({
+            'train_loss': history.history['loss'][epoch],
+            'val_loss': history.history['val_loss'][epoch],
+            'train_accuracy': history.history['binary_accuracy'][epoch],
+            'val_accuracy': history.history['val_binary_accuracy'][epoch]
+        }, step=epoch)
+```
+
+Tracked metrics: Dice loss, binary cross-entropy, binary accuracy, Mean IoU, epoch wall-clock time, GPU utilization, peak VRAM allocation, total parameter count, SavedModel size on disk, and batch inference latency (p50/p95).
+
+## Diagnostics
+
+**MLflow tracking server unreachable**
+```bash
+aws sagemaker describe-mlflow-tracking-server --tracking-server-name <server-name>
+curl -I https://<server-name>.<region>.aws/health
+```
+
+**`sagemaker:CreateModelPackage` denied**
+```bash
+aws iam simulate-principal-policy \
+  --policy-source-arn arn:aws:iam::<account>:role/SageMakerExecutionRole \
+  --action-names sagemaker:CreateModelPackage \
+  --resource-arns "*"
+```
+
+**Training job failure**
+```bash
+aws logs filter-log-events \
+  --log-group-name /aws/sagemaker/TrainingJobs \
+  --log-stream-name-prefix <job-name> \
+  --filter-pattern "ERROR"
+```
+
+**OOM on T4 (16 GiB VRAM):** Reduce `batch_size` in `config/model.yaml`. At `(256, 832, 3)` input resolution, `batch_size=4` consumes ~11 GiB VRAM with mixed-precision disabled.
+
+**Inference latency:** Apply TensorRT graph optimization (`trtexec`) to the SavedModel for sub-10ms p95 latency on T4. Enable S3 Transfer Acceleration on the artifact bucket for multi-region deployments with large SavedModel binaries.
+
+## References
+
+- [SageMaker `CreateModelPackage` API](https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_CreateModelPackage.html)
+- [MLflow Tracking Server](https://mlflow.org/docs/latest/tracking.html#mlflow-tracking-servers)
+- [TensorFlow SavedModel format](https://www.tensorflow.org/guide/saved_model)
+- [U-Net: Convolutional Networks for Biomedical Image Segmentation](https://arxiv.org/abs/1505.04597)
+- [V-Net / Dice Loss](https://arxiv.org/abs/1606.04797)
+
