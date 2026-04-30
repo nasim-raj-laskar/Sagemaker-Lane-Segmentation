@@ -1,7 +1,7 @@
 import streamlit as st
-import cv2
+import cv2  #type:ignore
 import numpy as np
-import tensorflow as tf
+import tensorflow as tf  #type:ignore
 import boto3
 import subprocess
 import os
