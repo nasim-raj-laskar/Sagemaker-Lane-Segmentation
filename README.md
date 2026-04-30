@@ -15,31 +15,39 @@
   </a>
 </p>
 
-Pixel-level binary semantic segmentation of lane boundaries using a fully-convolutional U-Net encoder-decoder trained on 289 annotated road images. The pipeline integrates SageMaker Training Jobs, SageMaker Model Registry with threshold-gated approval, MLflow experiment tracking, and a Streamlit inference frontend backed by TFSMLayer-wrapped SavedModel artifacts.
+<p align="center">
+  <img src="assets/arch.png" width="900"/>
+</p>
 
-![](assets/arch.png)
+<p align="center">
+  Pixel-level binary semantic segmentation of lane boundaries using a fully-convolutional U-Net encoder-decoder trained on 289 annotated road images. The pipeline integrates SageMaker Training Jobs, SageMaker Model Registry with threshold-gated approval, MLflow experiment tracking, and a Streamlit inference frontend backed by TFSMLayer-wrapped SavedModel artifacts.
+</p>
 
-## Architecture
+<h2 align="center">Architecture</h2>
 
-### Model
+<h3 align="center">Model</h3>
 
 Symmetric encoder-decoder (U-Net) with lateral skip connections between mirrored resolution stages. Skip connections concatenate encoder feature maps directly into the decoder path, preserving high-frequency spatial detail lost during max-pooling downsampling.
 
-| Component | Specification |
-|---|---|
-| Input tensor | `(N, 256, 832, 3)` — float32, normalized to `[0, 1]` |
-| Encoder depth | 4 stages — filter progression `[64, 128, 256, 512]` |
-| Bottleneck | 1024 filters, no spatial downsampling |
-| Decoder depth | 4 stages — filter progression `[512, 256, 128, 64]` |
-| Upsampling | Bilinear interpolation (`unpool='bilinear'`) |
-| Output | `(N, 256, 832, 1)` — sigmoid activation, binary mask |
-| Loss | Sørensen–Dice coefficient: `L = 1 - (2·|X∩Y| + ε) / (|X| + |Y| + ε)` |
-| Optimizer | Adam, `lr=1e-4`, default β₁=0.9, β₂=0.999 |
-| Metrics | Binary accuracy, Mean IoU (`num_classes=2`) |
+<p align="center">
+
+  | Component | Specification |
+  |---|---|
+  | Input tensor | `(N, 256, 832, 3)` — float32, normalized to `[0, 1]` |
+  | Encoder depth | 4 stages — filter progression `[64, 128, 256, 512]` |
+  | Bottleneck | 1024 filters, no spatial downsampling |
+  | Decoder depth | 4 stages — filter progression `[512, 256, 128, 64]` |
+  | Upsampling | Bilinear interpolation (`unpool='bilinear'`) |
+  | Output | `(N, 256, 832, 1)` — sigmoid activation, binary mask |
+  | Loss | Sørensen–Dice coefficient: `L = 1 - (2·|X∩Y| + ε) / (|X| + |Y| + ε)` |
+  | Optimizer | Adam, `lr=1e-4`, default β₁=0.9, β₂=0.999 |
+  | Metrics | Binary accuracy, Mean IoU (`num_classes=2`) |
+
+</p>
 
 Dice loss is preferred over binary cross-entropy here due to severe foreground/background class imbalance — lane pixels constitute a small fraction of total image area, causing BCE to converge to a degenerate all-background solution.
 
-### Infrastructure
+<h3 align="center">Infrastructure</h3>
 
 ```yaml
 Compute:
@@ -58,7 +66,7 @@ Orchestration:
   tracking: SageMaker MLflow Apps (OIDC-authenticated tracking server)
 ```
 
-## Repository Structure
+<h2 align="center">Repository Structure</h2>
 
 ```
 lane-segmentation-pipeline/
@@ -85,7 +93,7 @@ lane-segmentation-pipeline/
 └── MODEL_REGISTRY.md
 ```
 
-## Environment Setup
+<h2 align="center">Environment Setup</h2>
 
 **Requirements:** AWS account with `sagemaker:*`, `s3:*`, `iam:PassRole` permissions; Python ≥ 3.9; AWS CLI v2.
 
@@ -103,7 +111,6 @@ AWS_REGION=<region>
 S3_BUCKET=<bucket>
 SAGEMAKER_ROLE=SageMakerExecutionRole
 MLFLOW_ARN=arn:aws:sagemaker:<region>:<account>:mlflow-tracking-server/<server-name>
-
 ```
 
 ```bash
@@ -111,9 +118,9 @@ MLFLOW_ARN=arn:aws:sagemaker:<region>:<account>:mlflow-tracking-server/<server-n
 aws s3 sync dataset/ s3://<bucket>/raw-data/
 ```
 
-## Training
+<h2 align="center">Training</h2>
 
-### Launch SageMaker Training Job
+<h3 align="center">Launch SageMaker Training Job</h3>
 
 ```bash
 python main.py
@@ -121,7 +128,7 @@ python main.py
 
 This instantiates a `sagemaker.tensorflow.TensorFlow` estimator targeting `ml.g4dn.xlarge`, injects `config/model.yaml` hyperparameters as `--hyperparameters`, and calls `.fit()` with the S3 data channel. Training artifacts are written to `/opt/ml/model/` inside the container and automatically uploaded to S3 on job completion.
 
-### Hyperparameter Reference (`config/model.yaml`)
+<h3 align="center">Hyperparameter Reference (config/model.yaml)</h3>
 
 ```yaml
 epochs: 15
@@ -134,12 +141,12 @@ normalization_factor: 255.0
 mask_threshold: 255            # binarization cutoff for mask preprocessing
 test_size: 0.2
 random_state: 42
-s3_bucket: self-driving-perceptron
+s3_bucket: <bucket>
 s3_model_prefix: model-artifacts/lane_segmentation_model
 timestamp_format: '%Y%m%d_%H%M%S'
 ```
 
-### Infrastructure Configuration (`config/train.yaml`)
+<h3 align="center">Infrastructure Configuration (config/train.yaml)</h3>
 
 ```yaml
 sagemaker:
@@ -149,7 +156,7 @@ sagemaker:
   py_version: py39
 
 s3:
-  bucket: self-driving-perceptron
+  bucket: <bucket>
   data_path: raw-data
   model_artifacts_path: model-artifacts
   code_location: code
@@ -158,9 +165,9 @@ training:
   job_name_prefix: lane-segmentation-training
 ```
 
-## Model Registry
+<h2 align="center">Model Registry</h2>
 
-### Approval Gate Logic
+<h3 align="center">Approval Gate Logic</h3>
 
 Post-training, `src/model_registry.py` calls `sagemaker:CreateModelPackage`. Approval status is determined by comparing `final_val_accuracy` against `accuracy_threshold`:
 
@@ -191,7 +198,7 @@ approval_status = "Approved" if (
 ) else "PendingManualApproval"
 ```
 
-### CLI Operations
+<h3 align="center">CLI Operations</h3>
 
 ```bash
 # Enumerate all model package versions with approval status and metrics
@@ -202,7 +209,7 @@ python model_registry_utils.py approve \
   arn:aws:sagemaker:<region>:<account>:model-package/lane-segmentation-models/1
 ```
 
-### S3 Artifact Layout
+<h3 align="center">S3 Artifact Layout</h3>
 
 ```
 s3://<bucket>/model-artifacts/lane_segmentation_model/
@@ -233,9 +240,9 @@ s3://<bucket>/model-artifacts/lane_segmentation_model/
 }
 ```
 
-## Inference Application
+<h2 align="center">Inference Application</h2>
 
-### Model Loading
+<h3 align="center">Model Loading</h3>
 
 `app.py` resolves the latest `Approved` model package ARN via `list_model_packages`, downloads the SavedModel artifact from S3, and wraps it in a `TFSMLayer` to maintain Keras 3.x functional API compatibility (Keras 3 dropped native `tf.saved_model.load` integration):
 
@@ -254,7 +261,7 @@ def load_model():
     return tf.keras.Model(inputs=inputs, outputs=outputs), model_package_arn
 ```
 
-### Launch
+<h3 align="center">Launch</h3>
 
 ```bash
 streamlit run app.py --server.port 8501 --server.address 0.0.0.0
@@ -266,7 +273,7 @@ streamlit run app.py --server.port 8501 --server.address 0.0.0.0
   <em>Streamlit frontend: image upload → TFSMLayer inference → binary mask overlay. Registry status and training job launcher rendered in the sidebar.</em>
 </p>
 
-## MLOps Lifecycle
+<h2 align="center">MLOps Lifecycle</h2>
 
 ```mermaid
 graph TD
@@ -281,7 +288,7 @@ graph TD
     F --> I[TFSMLayer inference serving]
 ```
 
-## Experiment Tracking
+<h2 align="center">Experiment Tracking</h2>
 
 MLflow run context is opened in `src/train.py` before the Keras `.fit()` call. Hyperparameters are logged once; per-epoch metrics are logged with `step=epoch` for time-series visualization in the MLflow UI:
 
@@ -303,7 +310,35 @@ with mlflow.start_run(run_name=f"lane_seg_{timestamp}"):
 
 Tracked metrics: Dice loss, binary cross-entropy, binary accuracy, Mean IoU, epoch wall-clock time, GPU utilization, peak VRAM allocation, total parameter count, SavedModel size on disk, and batch inference latency (p50/p95).
 
-## References
+<h2 align="center">Diagnostics</h2>
+
+**MLflow tracking server unreachable**
+```bash
+aws sagemaker describe-mlflow-tracking-server --tracking-server-name <server-name>
+curl -I https://<server-name>.<region>.aws/health
+```
+
+**`sagemaker:CreateModelPackage` denied**
+```bash
+aws iam simulate-principal-policy \
+  --policy-source-arn arn:aws:iam::<account>:role/SageMakerExecutionRole \
+  --action-names sagemaker:CreateModelPackage \
+  --resource-arns "*"
+```
+
+**Training job failure**
+```bash
+aws logs filter-log-events \
+  --log-group-name /aws/sagemaker/TrainingJobs \
+  --log-stream-name-prefix <job-name> \
+  --filter-pattern "ERROR"
+```
+
+**OOM on T4 (16 GiB VRAM):** Reduce `batch_size` in `config/model.yaml`. At `(256, 832, 3)` input resolution, `batch_size=4` consumes ~11 GiB VRAM with mixed-precision disabled.
+
+**Inference latency:** Apply TensorRT graph optimization (`trtexec`) to the SavedModel for sub-10ms p95 latency on T4. Enable S3 Transfer Acceleration on the artifact bucket for multi-region deployments with large SavedModel binaries.
+
+<h2 align="center">References</h2>
 
 - [SageMaker `CreateModelPackage` API](https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_CreateModelPackage.html)
 - [MLflow Tracking Server](https://mlflow.org/docs/latest/tracking.html#mlflow-tracking-servers)
