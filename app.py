@@ -11,12 +11,49 @@ import yaml
 import threading
 import time
 from PIL import Image
+from src.model_registry import ModelRegistry
 
 st.set_page_config(page_title="Lane Segmentation", layout="wide")
 
 @st.cache_resource
 def load_model():
-    """Load model from S3"""
+    """Load latest approved model from SageMaker Model Registry"""
+    try:
+        registry = ModelRegistry()
+        model_s3_uri, model_package_arn = registry.get_latest_approved_model()
+        
+        if not model_s3_uri:
+            st.warning("No approved models found. Falling back to latest model from S3.")
+            return load_latest_s3_model()
+        
+        # Extract S3 details from URI
+        s3_parts = model_s3_uri.replace('s3://', '').split('/', 1)
+        bucket = s3_parts[0]
+        key = s3_parts[1]
+        
+        s3 = boto3.client('s3')
+        os.makedirs('models', exist_ok=True)
+        s3.download_file(bucket, key, 'models/approved.tar.gz')
+        
+        with tarfile.open('models/approved.tar.gz', 'r:gz') as tar:
+            tar.extractall('models/approved')
+        
+        # Use TFSMLayer for SavedModel format in Keras 3
+        model_layer = tf.keras.layers.TFSMLayer('models/approved/1', call_endpoint='serving_default')
+        
+        # Create a functional model wrapper
+        inputs = tf.keras.Input(shape=(256, 832, 3))
+        outputs = model_layer(inputs)
+        model = tf.keras.Model(inputs=inputs, outputs=outputs)
+        
+        return model, f"Approved Model: {model_package_arn}"
+        
+    except Exception as e:
+        st.error(f"Failed to load approved model: {e}")
+        return load_latest_s3_model()
+
+def load_latest_s3_model():
+    """Fallback: Load latest model from S3 (original behavior)"""
     try:
         s3 = boto3.client('s3')
         response = s3.list_objects_v2(Bucket='self-driving-perceptron', Prefix='model-artifacts/lane_segmentation_model')

@@ -1,5 +1,5 @@
 batch_size: 4
-epochs: 15
+epochs: 1
 img_height: 256
 img_width: 832
 learning_rate: 0.0001
@@ -13,3 +13,4 @@ tar_filename: model.tar.gz
 test_size: 0.2
 timestamp_format: '%Y%m%d_%H%M%S'
 verbose: 2
+accuracy_threshold: 0.8

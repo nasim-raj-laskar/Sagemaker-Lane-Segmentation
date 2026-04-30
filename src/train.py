@@ -10,6 +10,7 @@ from datetime import datetime
 from data_loader import DataLoader
 from model import create_unet_model
 from mlflow_config import setup_mlflow, log_metrics, log_params
+from model_registry import ModelRegistry
 
 def setup_gpu():
     """Configure GPU settings"""
@@ -47,7 +48,8 @@ def load_model_config():
         'tar_filename': hyperparams.get('tar-filename', 'model.tar.gz').strip('"'),
         's3_bucket': hyperparams.get('s3-bucket', 'self-driving-perceptron').strip('"'),
         's3_model_prefix': hyperparams.get('s3-model-prefix', 'model-artifacts/lane_segmentation_model').strip('"'),
-        'timestamp_format': hyperparams.get('timestamp-format', '%Y%m%d_%H%M%S').strip('"')
+        'timestamp_format': hyperparams.get('timestamp-format', '%Y%m%d_%H%M%S').strip('"'),
+        'accuracy_threshold': float(hyperparams.get('accuracy-threshold', 0.8))
     }
     return config
 
@@ -132,35 +134,90 @@ def run_training(config):
     print(f"Model saved to {serving_model_dir} (serving format)")
     print(f"Model archive saved to {tar_path}")
     
-    # Upload model to S3 with timestamp
-    timestamp = datetime.now().strftime(config['timestamp_format'])
+    # Get next version number
     s3_client = boto3.client('s3')
-    s3_key = f"{config['s3_model_prefix']}_{timestamp}.tar.gz"
+    version = get_next_version(s3_client, config['s3_bucket'], config['s3_model_prefix'])
+    
+    # Upload model to S3 with versioning
+    timestamp = datetime.now().strftime(config['timestamp_format'])
+    s3_key = f"{config['s3_model_prefix']}/v{version}/{timestamp}.tar.gz"
     
     try:
         s3_client.upload_file(tar_path, config['s3_bucket'], s3_key)
         print(f"Model uploaded to s3://{config['s3_bucket']}/{s3_key}")
+        model_s3_uri = f"s3://{config['s3_bucket']}/{s3_key}"
     except Exception as e:
         print(f"Failed to upload model to S3: {e}")
+        return
     
-    # Print and log final metrics
+    # Prepare final metrics
     final_loss = history.history['loss'][-1]
     final_val_loss = history.history['val_loss'][-1]
     final_acc = history.history['binary_accuracy'][-1]
     final_val_acc = history.history['val_binary_accuracy'][-1]
+    
+    metrics = {
+        'final_train_loss': float(final_loss),
+        'final_val_loss': float(final_val_loss),
+        'final_train_accuracy': float(final_acc),
+        'final_val_accuracy': float(final_val_acc),
+        'epochs': config['epochs'],
+        'batch_size': config['batch_size'],
+        'learning_rate': config['learning_rate'],
+        'timestamp': timestamp,
+        'version': version
+    }
     
     print(f"Final training loss: {final_loss:.4f}")
     print(f"Final validation loss: {final_val_loss:.4f}")
     print(f"Final training accuracy: {final_acc:.4f}")
     print(f"Final validation accuracy: {final_val_acc:.4f}")
     
-    # Log final metrics
-    log_metrics({
-        'final_train_loss': final_loss,
-        'final_val_loss': final_val_loss,
-        'final_train_accuracy': final_acc,
-        'final_val_accuracy': final_val_acc
-    })
+    # Log final metrics to MLflow
+    log_metrics(metrics)
+    
+    # Save metrics to S3 and register model
+    try:
+        registry = ModelRegistry()
+        
+        # Save metrics to S3
+        s3_key_prefix = f"{config['s3_model_prefix']}/v{version}"
+        registry.save_metrics_to_s3(metrics, config['s3_bucket'], s3_key_prefix)
+        
+        # Register model in SageMaker Model Registry
+        model_package_arn = registry.register_model(
+            model_s3_uri, 
+            metrics, 
+            config['accuracy_threshold']
+        )
+        
+        print(f"Model registered: {model_package_arn}")
+        
+    except Exception as e:
+        print(f"Failed to register model: {e}")
+
+def get_next_version(s3_client, bucket, prefix):
+    """Get next version number for model versioning"""
+    try:
+        response = s3_client.list_objects_v2(
+            Bucket=bucket,
+            Prefix=f"{prefix}/v",
+            Delimiter='/'
+        )
+        
+        versions = []
+        if 'CommonPrefixes' in response:
+            for obj in response['CommonPrefixes']:
+                version_str = obj['Prefix'].split('/')[-2]  # Extract version from path
+                if version_str.startswith('v'):
+                    try:
+                        versions.append(int(version_str[1:]))
+                    except ValueError:
+                        continue
+        
+        return max(versions) + 1 if versions else 1
+    except Exception:
+        return 1
 
 if __name__ == '__main__':
     main()
