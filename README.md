@@ -310,33 +310,17 @@ with mlflow.start_run(run_name=f"lane_seg_{timestamp}"):
 
 Tracked metrics: Dice loss, binary cross-entropy, binary accuracy, Mean IoU, epoch wall-clock time, GPU utilization, peak VRAM allocation, total parameter count, SavedModel size on disk, and batch inference latency (p50/p95).
 
-<h2 align="center">Diagnostics</h2>
+<h2 align="center">Interactive Demo (Hugging Face Spaces)</h2>
 
-**MLflow tracking server unreachable**
-```bash
-aws sagemaker describe-mlflow-tracking-server --tracking-server-name <server-name>
-curl -I https://<server-name>.<region>.aws/health
-```
+<p align="center">
+  <img src="assets/demo.png" width="900"/>
+  <br/>
+  <em>Lightweight interactive dashboard deployed on Hugging Face Spaces for real-time inference and visualization. Includes adjustable thresholding, overlay tuning, and performance metrics.</em>
+</p>
 
-**`sagemaker:CreateModelPackage` denied**
-```bash
-aws iam simulate-principal-policy \
-  --policy-source-arn arn:aws:iam::<account>:role/SageMakerExecutionRole \
-  --action-names sagemaker:CreateModelPackage \
-  --resource-arns "*"
-```
-
-**Training job failure**
-```bash
-aws logs filter-log-events \
-  --log-group-name /aws/sagemaker/TrainingJobs \
-  --log-stream-name-prefix <job-name> \
-  --filter-pattern "ERROR"
-```
-
-**OOM on T4 (16 GiB VRAM):** Reduce `batch_size` in `config/model.yaml`. At `(256, 832, 3)` input resolution, `batch_size=4` consumes ~11 GiB VRAM with mixed-precision disabled.
-
-**Inference latency:** Apply TensorRT graph optimization (`trtexec`) to the SavedModel for sub-10ms p95 latency on T4. Enable S3 Transfer Acceleration on the artifact bucket for multi-region deployments with large SavedModel binaries.
+<p align="center">
+  👉 <a href="https://huggingface.co/spaces/Nasim435/Lane-seg">Try Live Demo</a>
+</p>
 
 <h2 align="center">References</h2>
 
